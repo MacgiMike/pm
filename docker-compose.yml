@@ -1,0 +1,104 @@
+# Lockred Projects — production stack
+# Runs behind an existing Traefik on the external Docker network "proxy".
+# Traefik sends https://${APP_HOST}/api/* to the API and everything else to the web app.
+
+name: lockred
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lockred
+      POSTGRES_USER: lockred
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?set DB_OWNER_PASSWORD in .env}
+      APP_DB_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./deploy/db-init:/docker-entrypoint-initdb.d:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lockred -d lockred"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./api
+    image: lockred/api:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "47814"
+      DATABASE_URL: postgresql://lockred:${DB_OWNER_PASSWORD}@db:5432/lockred
+      APP_DATABASE_URL: postgresql://lockred_app:${DB_APP_PASSWORD}@db:5432/lockred
+      UPLOAD_DIR: /data/uploads
+      BACKUP_DIR: /backups
+    volumes:
+      - uploads:/data/uploads
+      - backups:/backups:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal, proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.lockred-api.rule=Host(`${APP_HOST:?set APP_HOST in .env}`) && PathPrefix(`/api`)
+      - traefik.http.routers.lockred-api.priority=100
+      - traefik.http.routers.lockred-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.lockred-api.tls=true
+      - traefik.http.routers.lockred-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.lockred-api.loadbalancer.server.port=47814
+
+  web:
+    build: ./web
+    image: lockred/web:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "47813"
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_URL: http://api:47814
+    depends_on: [api]
+    networks: [internal, proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.lockred-web.rule=Host(`${APP_HOST}`)
+      - traefik.http.routers.lockred-web.priority=10
+      - traefik.http.routers.lockred-web.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.lockred-web.tls=true
+      - traefik.http.routers.lockred-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.lockred-web.loadbalancer.server.port=47813
+
+  # Nightly pg_dump at 02:30 (container time zone), keeps the last 14 dumps.
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: lockred
+      PGDATABASE: lockred
+      PGPASSWORD: ${DB_OWNER_PASSWORD}
+      TZ: ${TZ:-Europe/Stockholm}
+      KEEP: "14"
+    volumes:
+      - backups:/backups
+      - ./deploy/backup/backup.sh:/backup.sh:ro
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+
+volumes:
+  db-data:
+  uploads:
+  backups:
+
+networks:
+  proxy:
+    external: true
+  internal:

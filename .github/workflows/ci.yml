@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/ci-results'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: lockred
+          POSTGRES_USER: lockred
+          POSTGRES_PASSWORD: ownerpw
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U lockred" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://lockred:ownerpw@localhost:5432/lockred
+      APP_DATABASE_URL: postgresql://lockred_app:apppw@localhost:5432/lockred
+      SHADOW_DATABASE_URL: postgresql://lockred:ownerpw@localhost:5432/shadow
+      APP_URL: http://localhost:47813
+      APP_SECRET: ci-secret
+      PORT: "47814"
+      UPLOAD_DIR: /tmp/uploads
+      OPERATOR_EMAIL: ops@example.com
+      OPERATOR_PASSWORD: operator-password-123
+      NODE_ENV: test
+      DISABLE_CRON: "true"
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Prepare logs
+        run: mkdir -p ../ci-logs && echo "commit ${{ github.sha }}" > ../ci-logs/api.log
+      - name: Install
+        run: set -o pipefail; npm install 2>&1 | tail -n 40 | tee -a ../ci-logs/api.log
+      - name: Create runtime DB role (like deploy/db-init)
+        run: |
+          set -o pipefail
+          sudo apt-get install -y -q postgresql-client >/dev/null
+          PGPASSWORD=ownerpw psql -h localhost -U lockred -d lockred -v ON_ERROR_STOP=1 -c "CREATE ROLE lockred_app LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'apppw';" 2>&1 | tee -a ../ci-logs/api.log
+          PGPASSWORD=ownerpw psql -h localhost -U lockred -d lockred -c "CREATE DATABASE shadow;" 2>&1 | tee -a ../ci-logs/api.log
+      - name: Prisma generate
+        run: set -o pipefail; npx prisma generate 2>&1 | tee -a ../ci-logs/api.log
+      - name: Migrate
+        run: set -o pipefail; npx prisma migrate deploy 2>&1 | tee -a ../ci-logs/api.log
+      - name: Schema drift check (migration SQL vs schema.prisma)
+        run: |
+          set -o pipefail
+          echo "=== DRIFT CHECK ===" | tee -a ../ci-logs/api.log
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --script 2>&1 | tee ../ci-logs/drift.sql | tee -a ../ci-logs/api.log
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code >/dev/null 2>&1 && echo "no drift" | tee -a ../ci-logs/api.log || { echo "DRIFT FOUND" | tee -a ../ci-logs/api.log; exit 1; }
+      - name: Type-check and build
+        run: set -o pipefail; npm run build 2>&1 | tee -a ../ci-logs/api.log
+      - name: Start API
+        run: |
+          nohup node dist/main.js > ../ci-logs/api-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:47814/api/health >/dev/null; then echo "API up" | tee -a ../ci-logs/api.log; exit 0; fi
+            sleep 1
+          done
+          echo "API did not start" | tee -a ../ci-logs/api.log; exit 1
+      - name: End-to-end tests
+        env:
+          API_URL: http://localhost:47814/api
+        run: set -o pipefail; npm run test:e2e 2>&1 | tee -a ../ci-logs/api.log
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-api
+          path: ci-logs/
+          if-no-files-found: ignore
+
+  web:
+    runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/ci-results'
+    steps:
+      - uses: actions/checkout@v4
+      - id: has
+        run: if [ -f web/package.json ]; then echo "yes=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-node@v4
+        if: steps.has.outputs.yes == 'true'
+        with:
+          node-version: 22
+      - name: Install
+        if: steps.has.outputs.yes == 'true'
+        working-directory: web
+        run: mkdir -p ../ci-logs && set -o pipefail; npm install 2>&1 | tail -n 40 | tee ../ci-logs/web.log
+      - name: Type-check
+        if: steps.has.outputs.yes == 'true'
+        working-directory: web
+        run: set -o pipefail; npx tsc --noEmit 2>&1 | tee -a ../ci-logs/web.log
+      - name: Build
+        if: steps.has.outputs.yes == 'true'
+        working-directory: web
+        run: set -o pipefail; npm run build 2>&1 | tee -a ../ci-logs/web.log
+      - name: Upload logs
+        if: always() && steps.has.outputs.yes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-web
+          path: ci-logs/
+          if-no-files-found: ignore
+
+  docker:
+    runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/ci-results'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images with Docker Compose
+        run: |
+          set -o pipefail
+          mkdir -p ci-logs
+          cp .env.example .env
+          docker network create proxy || true
+          docker compose config -q 2>&1 | tee ci-logs/docker.log
+          services="api"
+          if [ -f web/package.json ]; then services="api web"; fi
+          docker compose build --progress plain $services 2>&1 | tail -n 150 | tee -a ci-logs/docker.log
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-docker
+          path: ci-logs/
+          if-no-files-found: ignore
+
+  publish-results:
+    runs-on: ubuntu-24.04
+    needs: [api, web, docker]
+    if: always() && github.ref != 'refs/heads/ci-results'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Push logs to the ci-results branch
+        run: |
+          mkdir -p out
+          cp -r artifacts/* out/ 2>/dev/null || true
+          cat > out/SUMMARY.md <<EOF
+          commit: ${{ github.sha }}
+          branch: ${{ github.ref_name }}
+          api: ${{ needs.api.result }}
+          web: ${{ needs.web.result }}
+          docker: ${{ needs.docker.result }}
+          run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          cd out
+          git init -q -b ci-results
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git add -A
+          git commit -qm "CI results for ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-results

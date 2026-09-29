@@ -1,0 +1,637 @@
+// Lockred Projects data model.
+// Every table that holds tenant data has a "tenantId" column and a row-level
+// security policy (see migrations/0001_init). The API reads and writes tenant
+// data through the restricted "lockred_app" role, so a query can only ever see
+// rows of the tenant set for the current transaction.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+enum PlanTier {
+  STARTER
+  TEAM
+  BUSINESS
+  DEMO
+}
+
+enum TenantRole {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ProjectRole {
+  OWNER
+  COLEAD
+  CONTRIBUTOR
+}
+
+enum ProjectStatus {
+  SETUP
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum KpiDirection {
+  INCREASE
+  DECREASE
+}
+
+enum TicketType {
+  PROBLEM
+  QUESTION
+  FEATURE
+  BILLING
+}
+
+enum TicketStatus {
+  OPEN
+  WAITING_ON_CUSTOMER
+  PLANNED
+  RESOLVED
+  CLOSED
+}
+
+enum IdeaStatus {
+  UNDER_REVIEW
+  PLANNED
+  SHIPPED
+  DECLINED
+}
+
+enum AffiliateStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  VOID
+}
+
+// ---------- Global (not tenant-scoped) ----------
+
+model Account {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  name         String
+  passwordHash String?
+  totpSecret   String?
+  totpEnabled  Boolean   @default(false)
+  isOperator   Boolean   @default(false)
+  isDemo       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  memberships        Membership[]
+  projectMemberships ProjectMember[]
+  sessions           Session[]
+  resets             PasswordReset[]
+  affiliate          Affiliate?
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  tokenHash  String   @unique
+  accountId  String   @db.Uuid
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tenantId   String?  @db.Uuid
+  mfaPending Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
+
+  @@index([accountId])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  accountId String    @db.Uuid
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Tenant {
+  id                    String       @id @default(uuid()) @db.Uuid
+  slug                  String       @unique
+  name                  String
+  status                TenantStatus @default(TRIAL)
+  plan                  PlanTier     @default(TEAM)
+  seats                 Int          @default(10)
+  trialEndsAt           DateTime?
+  stripeCustomerId      String?      @unique
+  stripeSubscriptionId  String?      @unique
+  currency              String       @default("SEK")
+  timezone              String       @default("Europe/Stockholm")
+  settings              Json         @default("{}")
+  isDemo                Boolean      @default(false)
+  demoAffiliateId       String?      @unique @db.Uuid
+  referredByAffiliateId String?      @db.Uuid
+  supportAccessUntil    DateTime?
+  createdAt             DateTime     @default(now())
+  cancelledAt           DateTime?
+
+  memberships       Membership[]
+  invites           Invite[]
+  projects          Project[]
+  projectMembers    ProjectMember[]
+  directives        Directive[]
+  kpis              Kpi[]
+  kpiValues         KpiValue[]
+  tollgates         Tollgate[]
+  tollgateCriteria  TollgateCriterion[]
+  lanes             Lane[]
+  tasks             Task[]
+  checklistItems    ChecklistItem[]
+  activities        Activity[]
+  budgetPosts       BudgetPost[]
+  budgetPostLinks   BudgetPostLink[]
+  costs             Cost[]
+  files             FileObject[]
+  taskLinks         TaskLink[]
+  auditLogs         AuditLog[]
+  tickets           Ticket[]
+  ticketMessages    TicketMessage[]
+  snapshots         ProjectSnapshot[]
+  commissions       Commission[]
+  referredBy        Affiliate?   @relation("Referrals", fields: [referredByAffiliateId], references: [id], onDelete: SetNull)
+  demoOf            Affiliate?   @relation("DemoTenant", fields: [demoAffiliateId], references: [id], onDelete: SetNull)
+}
+
+model Idea {
+  id          String     @id @default(uuid()) @db.Uuid
+  title       String
+  description String     @default("")
+  status      IdeaStatus @default(UNDER_REVIEW)
+  createdAt   DateTime   @default(now())
+  votes       IdeaVote[]
+}
+
+model IdeaVote {
+  ideaId    String   @db.Uuid
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  accountId String   @db.Uuid
+  tenantId  String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  @@id([ideaId, accountId])
+}
+
+model Affiliate {
+  id                String          @id @default(uuid()) @db.Uuid
+  accountId         String          @unique @db.Uuid
+  account           Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  code              String          @unique
+  name              String
+  commissionPercent Int
+  commissionMonths  Int
+  stripeAccountId   String?         @unique
+  payoutsEnabled    Boolean         @default(false)
+  status            AffiliateStatus @default(ACTIVE)
+  createdAt         DateTime        @default(now())
+
+  clicks      ReferralClick[]
+  commissions Commission[]
+  referrals   Tenant[]        @relation("Referrals")
+  demoTenant  Tenant?         @relation("DemoTenant")
+}
+
+model ReferralClick {
+  id          String    @id @default(uuid()) @db.Uuid
+  affiliateId String    @db.Uuid
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  ipHash      String?
+  createdAt   DateTime  @default(now())
+
+  @@index([affiliateId, createdAt])
+}
+
+model Commission {
+  id              String           @id @default(uuid()) @db.Uuid
+  affiliateId     String           @db.Uuid
+  affiliate       Affiliate        @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  tenantId        String           @db.Uuid
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stripeInvoiceId String           @unique
+  amount          Decimal          @db.Decimal(14, 2)
+  currency        String
+  status          CommissionStatus @default(PENDING)
+  transferId      String?
+  paidAt          DateTime?
+  createdAt       DateTime         @default(now())
+}
+
+model StripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+// ---------- Tenant-scoped ----------
+
+model Membership {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @db.Uuid
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  accountId   String           @db.Uuid
+  account     Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  role        TenantRole       @default(MEMBER)
+  status      MembershipStatus @default(ACTIVE)
+  invitedById String?          @db.Uuid
+  createdAt   DateTime         @default(now())
+
+  @@unique([tenantId, accountId])
+}
+
+model Invite {
+  id          String     @id @default(uuid()) @db.Uuid
+  tenantId    String     @db.Uuid
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email       String
+  role        TenantRole @default(MEMBER)
+  tokenHash   String     @unique
+  invitedById String?    @db.Uuid
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime   @default(now())
+}
+
+model Project {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @db.Uuid
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  purpose        String        @default("")
+  sponsor        String        @default("")
+  startDate      DateTime      @db.Date
+  endDate        DateTime      @db.Date
+  status         ProjectStatus @default(SETUP)
+  approvedBudget Decimal       @default(0) @db.Decimal(14, 2)
+  inScope        String[]      @default([])
+  outScope       String[]      @default([])
+  setupStep      Int           @default(1)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  archivedAt     DateTime?
+
+  members     ProjectMember[]
+  directives  Directive[]
+  kpis        Kpi[]
+  tollgates   Tollgate[]
+  lanes       Lane[]
+  tasks       Task[]
+  activities  Activity[]
+  budgetPosts BudgetPost[]
+  costs       Cost[]
+  files       FileObject[]
+  taskLinks   TaskLink[]
+  snapshots   ProjectSnapshot[]
+}
+
+model ProjectMember {
+  id        String      @id @default(uuid()) @db.Uuid
+  tenantId  String      @db.Uuid
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId String      @db.Uuid
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  accountId String      @db.Uuid
+  account   Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  role      ProjectRole
+  addedById String?     @db.Uuid
+  createdAt DateTime    @default(now())
+
+  @@unique([projectId, accountId])
+}
+
+model Directive {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId String   @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text      String
+  source    String   @default("")
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Kpi {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenantId    String       @db.Uuid
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId   String       @db.Uuid
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  unit        String       @default("")
+  baseline    Decimal?     @db.Decimal(14, 4)
+  target      Decimal      @db.Decimal(14, 4)
+  direction   KpiDirection @default(INCREASE)
+  frequency   String       @default("Monthly")
+  ownerName   String       @default("")
+  afterGoLive Boolean      @default(false)
+  sort        Int          @default(0)
+  createdAt   DateTime     @default(now())
+  values      KpiValue[]
+}
+
+model KpiValue {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  kpiId       String   @db.Uuid
+  kpi         Kpi      @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  value       Decimal  @db.Decimal(14, 4)
+  measuredAt  DateTime @db.Date
+  note        String   @default("")
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+}
+
+model Tollgate {
+  id         String              @id @default(uuid()) @db.Uuid
+  tenantId   String              @db.Uuid
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId  String              @db.Uuid
+  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  code       String
+  name       String
+  date       DateTime            @db.Date
+  passedAt   DateTime?
+  passedById String?             @db.Uuid
+  sort       Int                 @default(0)
+  createdAt  DateTime            @default(now())
+  criteria   TollgateCriterion[]
+  tasks      Task[]
+}
+
+model TollgateCriterion {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tollgateId String   @db.Uuid
+  tollgate   Tollgate @relation(fields: [tollgateId], references: [id], onDelete: Cascade)
+  text       String
+  met        Boolean  @default(false)
+  sort       Int      @default(0)
+}
+
+model Lane {
+  id            String           @id @default(uuid()) @db.Uuid
+  tenantId      String           @db.Uuid
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId     String           @db.Uuid
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name          String
+  color         String           @default("#2F5BD3")
+  leadAccountId String?          @db.Uuid
+  sort          Int              @default(0)
+  createdAt     DateTime         @default(now())
+  tasks         Task[]
+  postLinks     BudgetPostLink[]
+  costs         Cost[]
+}
+
+model Task {
+  id                String           @id @default(uuid()) @db.Uuid
+  tenantId          String           @db.Uuid
+  tenant            Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId         String           @db.Uuid
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  laneId            String?          @db.Uuid
+  lane              Lane?            @relation(fields: [laneId], references: [id], onDelete: SetNull)
+  tollgateId        String?          @db.Uuid
+  tollgate          Tollgate?        @relation(fields: [tollgateId], references: [id], onDelete: SetNull)
+  budgetPostId      String?          @db.Uuid
+  budgetPost        BudgetPost?      @relation(fields: [budgetPostId], references: [id], onDelete: SetNull)
+  title             String
+  description       String           @default("")
+  assigneeAccountId String?          @db.Uuid
+  startDate         DateTime?        @db.Date
+  dueDate           DateTime?        @db.Date
+  estimateHours     Decimal?         @db.Decimal(8, 1)
+  progress          Int              @default(0)
+  sort              Int              @default(0)
+  createdById       String?          @db.Uuid
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  checklist         ChecklistItem[]
+  activities        Activity[]
+  files             FileObject[]
+  links             TaskLink[]
+  postLinks         BudgetPostLink[]
+  costs             Cost[]
+
+  @@index([projectId])
+}
+
+model ChecklistItem {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @db.Uuid
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  taskId   String  @db.Uuid
+  task     Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  text     String
+  done     Boolean @default(false)
+  sort     Int     @default(0)
+}
+
+model Activity {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId      String   @db.Uuid
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId         String?  @db.Uuid
+  task           Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actorAccountId String?  @db.Uuid
+  actorName      String
+  viaTaskLinkId  String?  @db.Uuid
+  kind           String
+  text           String   @default("")
+  data           Json     @default("{}")
+  budgetOnly     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([taskId, createdAt])
+}
+
+model BudgetPost {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @db.Uuid
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId String           @db.Uuid
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  amount    Decimal          @db.Decimal(14, 2)
+  sort      Int              @default(0)
+  createdAt DateTime         @default(now())
+  links     BudgetPostLink[]
+  costs     Cost[]
+  tasks     Task[]
+}
+
+model BudgetPostLink {
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @db.Uuid
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  budgetPostId String     @db.Uuid
+  budgetPost   BudgetPost @relation(fields: [budgetPostId], references: [id], onDelete: Cascade)
+  laneId       String?    @db.Uuid
+  lane         Lane?      @relation(fields: [laneId], references: [id], onDelete: Cascade)
+  taskId       String?    @db.Uuid
+  task         Task?      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Cost {
+  id           String      @id @default(uuid()) @db.Uuid
+  tenantId     String      @db.Uuid
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId    String      @db.Uuid
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  budgetPostId String      @db.Uuid
+  budgetPost   BudgetPost  @relation(fields: [budgetPostId], references: [id], onDelete: Restrict)
+  laneId       String?     @db.Uuid
+  lane         Lane?       @relation(fields: [laneId], references: [id], onDelete: SetNull)
+  taskId       String?     @db.Uuid
+  task         Task?       @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  supplier     String
+  reference    String      @default("")
+  amount       Decimal     @db.Decimal(14, 2)
+  date         DateTime    @db.Date
+  note         String      @default("")
+  fileId       String?     @unique @db.Uuid
+  file         FileObject? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  createdById  String?     @db.Uuid
+  createdAt    DateTime    @default(now())
+
+  @@index([projectId, date])
+}
+
+model FileObject {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId           String   @db.Uuid
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId              String?  @db.Uuid
+  task                Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  name                String
+  mime                String
+  size                Int
+  storageKey          String
+  budgetOnly          Boolean  @default(false)
+  uploadedByAccountId String?  @db.Uuid
+  uploadedByLinkId    String?  @db.Uuid
+  uploadedByName      String   @default("")
+  createdAt           DateTime @default(now())
+  cost                Cost?
+}
+
+model TaskLink {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId   String    @db.Uuid
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String    @db.Uuid
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  guestName   String
+  guestEmail  String
+  guestOrg    String    @default("")
+  canComment  Boolean   @default(true)
+  canFiles    Boolean   @default(true)
+  untilDone   Boolean   @default(true)
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+}
+
+model ProjectSnapshot {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId String   @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  progress  Decimal  @db.Decimal(5, 2)
+  planned   Decimal  @db.Decimal(5, 2)
+  spent     Decimal  @db.Decimal(14, 2)
+
+  @@unique([projectId, date])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorAccountId String?  @db.Uuid
+  actorName      String
+  action         String
+  targetType     String   @default("")
+  targetId       String   @default("")
+  data           Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+}
+
+model Ticket {
+  id            String          @id @default(uuid()) @db.Uuid
+  number        Int             @unique @default(autoincrement())
+  tenantId      String          @db.Uuid
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type          TicketType
+  severity      String          @default("")
+  subject       String
+  body          String
+  status        TicketStatus    @default(OPEN)
+  createdById   String?         @db.Uuid
+  createdByName String
+  diagnostics   Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  messages      TicketMessage[]
+}
+
+model TicketMessage {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ticketId     String   @db.Uuid
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorName   String
+  fromOperator Boolean  @default(false)
+  body         String
+  createdAt    DateTime @default(now())
+}
