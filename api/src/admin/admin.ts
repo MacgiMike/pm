@@ -283,8 +283,34 @@ export class AdminService {
     });
   }
 
+  /** Active people in the organization, for choosing a new project owner. */
+  async people(ctx: Ctx) {
+    return this.t(ctx, async (tx) => {
+      const [members, owned] = await Promise.all([
+        tx.membership.findMany({ where: { status: 'ACTIVE' }, include: { account: { select: { id: true, name: true, email: true } } } }),
+        tx.projectMember.groupBy({ by: ['accountId'], where: { role: 'OWNER', project: { archivedAt: null } }, _count: { _all: true } }),
+      ]);
+      const ownedOf = new Map(owned.map((o) => [o.accountId, o._count._all]));
+      return members
+        .map((m) => ({ accountId: m.accountId, name: m.account.name, email: m.account.email, role: m.role, owns: ownedOf.get(m.accountId) ?? 0 }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }
+
   portfolioAll(ctx: Ctx) {
     return this.projects.portfolio(ctx, { includeArchived: true, all: true });
+  }
+}
+
+@Controller('people')
+@UseGuards(TenantGuard)
+@Roles('ADMIN', 'MANAGER')
+export class PeopleController {
+  constructor(private admin: AdminService) {}
+
+  @Get()
+  list(@CurrentCtx() ctx: Ctx) {
+    return this.admin.people(ctx);
   }
 }
 

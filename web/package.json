@@ -1,0 +1,25 @@
+{
+  "name": "lockred-web",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "next dev -p 47813",
+    "build": "next build",
+    "start": "next start -p 47813"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.1.0",
+    "@fontsource/ibm-plex-sans": "^5.1.0",
+    "@fontsource/schibsted-grotesk": "^5.1.0",
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.7.0"
+  }
+}

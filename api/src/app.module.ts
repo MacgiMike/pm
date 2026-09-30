@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AdminController, AdminService } from './admin/admin';
+import { AdminController, AdminService, PeopleController } from './admin/admin';
 import { AffiliatesController, AffiliatesService } from './affiliates/affiliates';
 import { AuthModule } from './auth/auth.module';
 import { BillingController, BillingService } from './billing/billing';
@@ -29,6 +29,7 @@ import { SupportController, SupportService } from './support/support';
   controllers: [
     HealthController,
     AdminController,
+    PeopleController,
     ReportsController,
     SupportController,
     BillingController,
