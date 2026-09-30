@@ -7,7 +7,7 @@ import { useApi } from '@/lib/useApi';
 import { I } from '@/components/icons';
 import { AllocationNote, PostsEditor } from '@/components/project';
 import { Topbar } from '@/components/shell';
-import { Bar, Confirm, download, Empty, ErrorBox, InlineText, Loading, Modal, useAction } from '@/components/ui';
+import { Bar, Confirm, download, Empty, ErrorBox, Loading, Modal, MoneyInput, useAction } from '@/components/ui';
 
 export default function BudgetPage() {
   const { me, base } = useTenant();
@@ -46,8 +46,8 @@ export default function BudgetPage() {
                 <div className="card pad stat">
                   <span className="stat-label">Approved budget</span>
                   {edit ? (
-                    <InlineText ariaLabel="Approved budget" className="money" value={String(T.approved)}
-                      onSave={(v) => api.patch(`/projects/${proj.id}`, { approvedBudget: Number(v.replace(/\s/g, '').replace(',', '.')) || 0 }).then(refresh)} />
+                    <MoneyInput ariaLabel="Approved budget" value={T.approved} currency={currency}
+                      onSave={(v) => api.patch(`/projects/${proj.id}`, { approvedBudget: v }).then(refresh)} />
                   ) : <span className="stat-value money">{money(T.approved, currency)}</span>}
                   {!T.approved && <span className="tiny muted">Not set — the posts’ total ({money(T.allocated, currency)}) is used</span>}
                 </div>

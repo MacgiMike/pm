@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { api, errorText } from '@/lib/api';
 import { AuthLayout } from '@/components/auth';
 
@@ -18,7 +18,8 @@ export default function SignupPage() {
   const [terms, setTerms] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const host = typeof window !== 'undefined' ? window.location.host : 'pm.lockred.app';
+  const [host, setHost] = useState('pm.lockred.app');
+  useEffect(() => setHost(window.location.host), []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

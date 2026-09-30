@@ -76,7 +76,7 @@ export default function TaskPage() {
               <div className="row top gap8">
                 <div className="grow">
                   {can.work ? (
-                    <InlineText ariaLabel="Task title" value={d.title} className="display" onSave={(v) => patch({ title: v })}
+                    <InlineText ariaLabel="Task title" value={d.title} className="quiet title-input" onSave={(v) => patch({ title: v })}
                       placeholder="Task title" />
                   ) : <h1 className="page-title" style={{ fontSize: 26 }}>{d.title}</h1>}
                 </div>
@@ -85,7 +85,7 @@ export default function TaskPage() {
                 </span>
               </div>
               {can.work
-                ? <InlineText ariaLabel="Description" multiline value={d.description} onSave={(v) => patch({ description: v })} placeholder="Describe what needs to be done…" />
+                ? <InlineText ariaLabel="Description" multiline className="quiet" value={d.description} onSave={(v) => patch({ description: v })} placeholder="Describe what needs to be done…" />
                 : d.description && <p style={{ color: 'var(--text2)', lineHeight: 1.5 }}>{d.description}</p>}
             </div>
 

@@ -92,7 +92,7 @@ export function Drawer({ title, kicker, onClose, children, footer }: {
 }) {
   useEscape(onClose);
   return (
-    <div className="overlay right" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="overlay drawer-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <aside className="drawer" role="dialog" aria-modal="true" aria-label={title}>
         <div className="dialog-head" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
           <div className="row between top">
@@ -205,6 +205,31 @@ export function InlineText({ value, onSave, placeholder, multiline, className, d
   return (
     <input className={`input ${className ?? ''}`} value={v} disabled={disabled} placeholder={placeholder} aria-label={ariaLabel}
       onChange={(e) => setV(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+  );
+}
+
+/** Number field that shows "2 100 000 kr" until focused, then the plain number. Saves on blur. */
+export function MoneyInput({ value, onSave, currency, disabled, ariaLabel, className }: {
+  value: number; onSave: (v: number) => Promise<unknown>; currency: string; disabled?: boolean; ariaLabel: string; className?: string;
+}) {
+  const [focus, setFocus] = useState(false);
+  const [v, setV] = useState(String(value));
+  useEffect(() => { if (!focus) setV(String(value)); }, [value, focus]);
+  const toast = useToast();
+  const fmt = (n: number) => `${Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} ${currency === 'SEK' || currency === 'NOK' || currency === 'DKK' ? 'kr' : currency}`;
+  return (
+    <input className={`input money ${className ?? ''}`} aria-label={ariaLabel} disabled={disabled} inputMode="decimal"
+      value={focus ? v : fmt(value)}
+      onFocus={(e) => { setFocus(true); setV(String(value)); requestAnimationFrame(() => e.target.select()); }}
+      onChange={(e) => setV(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      onBlur={async () => {
+        setFocus(false);
+        const n = Number(v.replace(/[\s\u202f]/g, '').replace(',', '.'));
+        if (!Number.isFinite(n) || n < 0) { toast.show('Enter an amount', true); return; }
+        if (n === value) return;
+        try { await onSave(n); } catch (err) { toast.show(errorText(err), true); }
+      }} />
   );
 }
 

@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 import { money, ROLE_LABEL } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
 import { I } from './icons';
-import { Avatar, Confirm, InlineText, Loading, useAction } from './ui';
+import { Avatar, Confirm, InlineText, Loading, MoneyInput, useAction } from './ui';
 
 export function TagEditor({ tags, onChange, disabled, tone, label }: {
   tags: string[]; onChange: (t: string[]) => Promise<unknown>; disabled?: boolean; tone?: 'green'; label: string;
@@ -56,8 +56,8 @@ export function PostsEditor({ projectId, posts, currency, canEdit, onChanged, co
       {posts.map((p) => (
         <div key={p.id} className="grid" style={{ gridTemplateColumns: 'minmax(0,1.6fr) 180px 40px', gap: 10, alignItems: 'center' }}>
           <InlineText ariaLabel="Post name" value={p.name} disabled={!canEdit} className="sm" onSave={(v) => api.patch(`/projects/${projectId}/budget/posts/${p.id}`, { name: v }).then(onChanged)} />
-          <InlineText ariaLabel="Amount" value={String(p.amount)} disabled={!canEdit} className="sm money"
-            onSave={(v) => api.patch(`/projects/${projectId}/budget/posts/${p.id}`, { amount: Number(v.replace(/\s/g, '').replace(',', '.')) || 0 }).then(onChanged)} />
+          <MoneyInput ariaLabel={`Amount for ${p.name}`} value={p.amount} currency={currency} disabled={!canEdit} className="sm"
+            onSave={(v) => api.patch(`/projects/${projectId}/budget/posts/${p.id}`, { amount: v }).then(onChanged)} />
           {canEdit ? <button className="icon-btn" aria-label={`Delete ${p.name}`} onClick={() => setDeleting(p.id)}><I.Trash /></button> : <span />}
         </div>
       ))}

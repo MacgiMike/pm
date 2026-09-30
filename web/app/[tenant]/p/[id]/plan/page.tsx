@@ -144,6 +144,15 @@ function Timeline({ data, canEdit, onChanged }: { data: any; canEdit: boolean; o
   const todayX = today >= toYmd(start) && today < toYmd(end) ? x(today) : null;
   const H = 52 + rows.length * 40;
 
+  // Open with today about a third of the way in, so current work is visible.
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || todayX === null) return;
+    el.scrollLeft = Math.max(0, todayX - el.clientWidth / 3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayX === null]);
+
   return (
     <>
       <section className="card gantt" aria-label="Timeline">
@@ -165,7 +174,7 @@ function Timeline({ data, canEdit, onChanged }: { data: any; canEdit: boolean; o
             ),
           )}
         </div>
-        <div className="gantt-right">
+        <div className="gantt-right" ref={scroller}>
           <div style={{ width, position: 'relative', height: H }}>
             <div style={{ display: 'flex', height: 52, borderBottom: '1px solid var(--border)' }}>
               {months.map((m, i) => (

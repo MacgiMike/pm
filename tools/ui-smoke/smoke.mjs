@@ -206,7 +206,7 @@ await step('sign-up: create organization, first project, setup wizard', async ()
   await page.getByLabel('Your web address').fill(slug);
   await page.getByLabel('Your name').fill('Sam Smoke');
   await page.getByLabel('Work email').fill(`${slug}@example.com`);
-  await page.getByLabel('Password', { exact: true }).fill('correct horse battery');
+  await page.getByLabel(/^Password/).fill('correct horse battery');
   await page.getByRole('checkbox').check();
   await shot(page, 'signup');
   await page.getByRole('button', { name: 'Create organization' }).click();
@@ -227,7 +227,7 @@ await step('sign-up: create organization, first project, setup wizard', async ()
   await shot(page, 'new-setup-tollgates');
   await page.getByRole('button', { name: /Next: Budget/ }).click();
   await page.getByLabel('New budget post name').fill('Consultants');
-  await page.getByLabel('Amount', { exact: true }).fill('500000');
+  await page.getByRole('textbox', { name: 'Amount', exact: true }).fill('500000');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.waitForTimeout(500);
   await page.getByRole('button', { name: /Next: Team/ }).click();
@@ -235,8 +235,8 @@ await step('sign-up: create organization, first project, setup wizard', async ()
   await page.getByRole('heading', { name: 'New warehouse system' }).waitFor();
   await nav(page, 'Swim lanes');
   await page.getByRole('button', { name: 'Add the first lane' }).click();
-  await page.getByLabel('Name').fill('Build');
-  await page.getByRole('button', { name: 'Add lane' }).click();
+  await page.getByRole('dialog').getByLabel('Name').fill('Build');
+  await page.getByRole('dialog').getByRole('button', { name: 'Add lane', exact: true }).click();
   await page.getByRole('button', { name: '+ Task in this lane' }).click();
   await page.getByLabel('What needs to be done?').fill('Pick a vendor');
   await page.getByLabel('Estimate (hours)').fill('20');

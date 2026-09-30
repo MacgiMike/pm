@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useTenant } from '@/lib/context';
-import { compactMoney, pct, relDays, shortDate, todayYmd } from '@/lib/format';
+import { moneyOf, pct, relDays, shortDate, todayYmd } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
 import { I } from '@/components/icons';
 import { Topbar } from '@/components/shell';
@@ -93,7 +93,7 @@ export default function PortfolioPage() {
               <div className="card pad stat">
                 <span className="stat-label">Budget used</span>
                 <span className="stat-value">{totBudget ? pct((totSpent / totBudget) * 100) : '—'}</span>
-                <span className="small muted">{totBudget ? `${compactMoney(totSpent, t.currency)} of ${compactMoney(totBudget, t.currency)}` : 'visible for projects you lead'}</span>
+                <span className="small muted">{totBudget ? moneyOf(totSpent, totBudget, t.currency) : 'visible for projects you lead'}</span>
               </div>
             </div>
 
@@ -161,7 +161,7 @@ export default function PortfolioPage() {
                           {bp === null ? <span className="tiny muted">{r.budget === null ? 'Owner & co-leads only' : 'No budget set'}</span> : (
                             <>
                               <Bar value={Math.min(100, bp)} size="thin" color={bp > 100 ? 'var(--red)' : bp > 90 ? 'var(--amber-mid)' : undefined} />
-                              <span className="tiny muted">{bp}% · {compactMoney(r.spent, t.currency)} of {compactMoney(r.budget, t.currency)}</span>
+                              <span className="tiny muted nowrap">{bp}% · {moneyOf(r.spent, r.budget, t.currency)}</span>
                             </>
                           )}
                         </span>

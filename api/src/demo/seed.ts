@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { Tx } from '../core/prisma.service';
 import { sha256 } from '../core/tokens';
 import { addDays, todayUtc } from '../core/util';
+import { actualProgress, plannedProgress, TaskLite } from '../projects/metrics';
 
 export interface DemoPeople {
   [key: string]: { id: string; name: string };
@@ -144,6 +145,10 @@ export async function seedDemo(tx: Tx, tenantId: string, people: DemoPeople, gue
 
   const taskDefs: [string, string, string | null, number, number, number, number, string, string][] = [
     // key, title, assignee, start, due, hours, progress, lane, gate
+    ['fdes', 'Finance process design', 'elin', -135, -85, 60, 100, 'fin', 'TG2'],
+    ['wdes', 'Warehouse process design', 'omar', -130, -80, 50, 100, 'wh', 'TG2'],
+    ['dscope', 'Data mapping & scope', 'jonas', -120, -62, 80, 100, 'dm', 'TG2'],
+    ['impact', 'Change impact analysis', 'karin', -110, -65, 30, 100, 'tr', 'TG2'],
     ['coa', 'Chart of accounts mapping', 'elin', -28, -3, 40, 100, 'fin', 'TG3'],
     ['apar', 'AP/AR configuration', 'jonas', -14, 21, 80, 60, 'fin', 'TG3'],
     ['frep', 'Financial reports build', 'elin', 6, 42, 60, 0, 'fin', 'TG4'],
@@ -267,15 +272,21 @@ export async function seedDemo(tx: Tx, tenantId: string, people: DemoPeople, gue
   await act('task.progress', 'moved progress 90% → 100%', 'elin', 'coa', 80);
   await act('link.created', 'shared the task with Anders Vik', 'elin', 'cust', 700);
 
-  // Nightly snapshots so the report has an actual curve
-  const start = d(-140);
+  // Weekly history so the report has an actual curve: follows the plan, drifting to today's gap.
+  const lite: TaskLite[] = taskDefs.map(([, , , s, e, hours, progress, lane]) => ({
+    laneId: lanes[lane], progress, estimateHours: hours, startDate: d(s), dueDate: d(e),
+  }));
+  const pStart = d(-140);
+  const nowActual = actualProgress(lite);
+  const nowPlanned = plannedProgress(lite, today, pStart) || 1;
   for (let day = -140; day <= -1; day += 7) {
-    const f = (day + 140) / 140;
+    const planned = plannedProgress(lite, d(day), pStart);
+    const drift = 1 - (1 - nowActual / nowPlanned) * Math.min(1, (day + 140) / 140);
+    const progress = Math.round(Math.min(planned, planned * drift) * 10) / 10;
     await tx.projectSnapshot.create({
-      data: { tenantId: T, projectId: h.id, date: d(day), progress: Math.round(41 * Math.pow(f, 1.15) * 10) / 10, planned: 0, spent: Math.round(1_240_000 * f) },
+      data: { tenantId: T, projectId: h.id, date: d(day), progress, planned, spent: Math.round(1_240_000 * (nowActual ? progress / nowActual : 0)) },
     });
   }
-  void start;
 
   // ---------------- The rest of the portfolio ----------------
   const others: [string, string, string, number, number, number, number, number, [string, string, number]][] = [

@@ -15,6 +15,21 @@ export function compactMoney(n: number | null | undefined, currency = 'SEK'): st
   return money(n, currency);
 }
 
+/** "1,24 of 2,10 M kr" — both numbers in the same unit, short enough for table cells. */
+export function moneyOf(spent: number | null | undefined, total: number | null | undefined, currency = 'SEK'): string {
+  if (spent == null || total == null) return '—';
+  const sym = currency === 'SEK' || currency === 'NOK' || currency === 'DKK' ? 'kr' : currency;
+  if (Math.max(Math.abs(total), Math.abs(spent)) >= 1_000_000) {
+    const f = (n: number) => (n / 1_000_000).toFixed(2).replace('.', ',');
+    return `${f(spent)} of ${f(total)} M ${sym}`;
+  }
+  if (Math.max(Math.abs(total), Math.abs(spent)) >= 10_000) {
+    const f = (n: number) => Math.round(n / 1000).toString();
+    return `${f(spent)} of ${f(total)} k ${sym}`;
+  }
+  return `${money(spent, currency)} of ${money(total, currency)}`;
+}
+
 export function pct(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
   return `${Math.round(n)}%`;

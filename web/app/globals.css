@@ -228,7 +228,7 @@ a.trow:hover { background: #fbfaf8; color: inherit; }
 
 /* ---------- Overlays ---------- */
 .overlay { position: fixed; inset: 0; background: rgba(22,23,27,.38); z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.overlay.right { justify-content: flex-end; padding: 0; align-items: stretch; }
+.overlay.drawer-wrap { justify-content: flex-end; padding: 0; align-items: stretch; }
 .dialog { width: 100%; max-width: 620px; max-height: calc(100vh - 32px); overflow: auto; background: var(--surface); border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.2); display: flex; flex-direction: column; }
 .dialog.narrow { max-width: 460px; }
 .dialog-head { padding: 22px 26px 12px; display: flex; flex-direction: column; gap: 4px; }
@@ -299,3 +299,12 @@ a.trow:hover { background: #fbfaf8; color: inherit; }
   .side-nav { position: static; flex-direction: row; overflow-x: auto; }
   .side-nav > * { white-space: nowrap; }
 }
+
+/* Inputs that read as text until you hover or focus them */
+.quiet { border-color: transparent !important; background: transparent !important; }
+.quiet:hover { border-color: var(--border) !important; background: var(--surface) !important; }
+.quiet:focus { border-color: var(--field) !important; background: var(--surface) !important; }
+.title-input { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: -0.01em; min-height: 48px; padding: 0 8px; margin-left: -9px; }
+.kpi-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.kpi-grid { display: grid; grid-template-columns: 90px 110px 110px 110px 130px; gap: 10px; align-items: end; }
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

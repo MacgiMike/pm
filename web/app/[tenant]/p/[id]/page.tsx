@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useProject, useTenant } from '@/lib/context';
-import { money, pct, relDays, shortDate, timeAgo } from '@/lib/format';
+import { money, moneyOf, pct, relDays, shortDate, timeAgo } from '@/lib/format';
 import { I } from '@/components/icons';
 import { Topbar } from '@/components/shell';
 import { Bar, Confirm, HealthBadge, useAction } from '@/components/ui';
@@ -71,7 +71,7 @@ export default function OverviewPage() {
               <span className="stat-label">Budget used</span>
               <span className="row gap8" style={{ alignItems: 'baseline' }}>
                 <span className="stat-value">{d.budget.total ? pct((d.budget.spent / d.budget.total) * 100) : '—'}</span>
-                <span className="small" style={{ color: 'var(--text2)' }}>{money(d.budget.spent, d.budget.currency)} of {money(d.budget.total, d.budget.currency)}</span>
+                <span className="small" style={{ color: 'var(--text2)' }}>{moneyOf(d.budget.spent, d.budget.total, d.budget.currency)}</span>
               </span>
               {d.budget.total > 0 && (
                 <span className={`small strong ${d.budget.forecast > d.budget.total ? 'txt-warn' : 'txt-ok'}`}>

@@ -9,7 +9,7 @@ import { useApi } from '@/lib/useApi';
 import { I } from '@/components/icons';
 import { AllocationNote, PostsEditor, sumPosts, TagEditor, TeamAdd } from '@/components/project';
 import { Topbar } from '@/components/shell';
-import { Confirm, InlineText, Loading, Modal, useAction } from '@/components/ui';
+import { Confirm, InlineText, Loading, Modal, MoneyInput, useAction } from '@/components/ui';
 
 const STEPS = [
   { label: 'Directives', sub: 'Purpose, scope, rules', tip: 'Directives are the rules the steering group has set. They sit at the top of the project so every decision can be checked against them.' },
@@ -148,8 +148,6 @@ function StepDirectives({ edit }: { edit: boolean }) {
   );
 }
 
-const KPI_COLS = 'minmax(0,2.2fr) 100px 100px 90px 150px 120px minmax(0,1.2fr) 40px';
-
 function StepKpis({ edit }: { edit: boolean }) {
   const { data: d, reload } = useProject();
   const { busy, run } = useAction();
@@ -164,38 +162,35 @@ function StepKpis({ edit }: { edit: boolean }) {
         <h1 className="display" style={{ fontSize: 24, fontWeight: 700 }}>How will we know it worked?</h1>
         <p className="small muted">KPIs show up on the overview and in every report. Skip this step if the project doesn’t need them.</p>
       </div>
-      {d.kpis.length > 0 && (
-        <div className="scroll-x">
-          <div style={{ minWidth: 860 }} className="col gap8">
-            <div className="grid tiny muted strong" style={{ gridTemplateColumns: KPI_COLS, gap: 10, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              <span>KPI</span><span>Unit</span><span>Today</span><span>Better if</span><span>Target</span><span>Measured</span><span>Owner</span><span />
-            </div>
-            {d.kpis.map((k: any) => (
-              <div key={k.id} className="col gap4">
-                <div className="grid" style={{ gridTemplateColumns: KPI_COLS, gap: 10, alignItems: 'center' }}>
-                  <InlineText ariaLabel="KPI name" value={k.name} disabled={!edit} className="sm" onSave={(v) => patch(k, { name: v })} />
-                  <InlineText ariaLabel="Unit" value={k.unit} disabled={!edit} className="sm" placeholder="%, h, days" onSave={(v) => patch(k, { unit: v })} />
-                  <InlineText ariaLabel="Baseline" value={k.baseline == null ? '' : String(k.baseline)} disabled={!edit} className="sm money" onSave={(v) => patch(k, { baseline: num(v) })} />
-                  <select className="select sm" disabled={!edit} value={k.direction} onChange={(e) => run(() => patch(k, { direction: e.target.value }))} aria-label="Direction">
-                    <option value="INCREASE">Higher</option><option value="DECREASE">Lower</option>
-                  </select>
-                  <InlineText ariaLabel="Target" value={String(k.target)} disabled={!edit} className="sm money" onSave={(v) => patch(k, { target: num(v) ?? 0 })} />
-                  <select className="select sm" disabled={!edit} value={k.frequency} onChange={(e) => run(() => patch(k, { frequency: e.target.value }))} aria-label="Frequency">
-                    {['Weekly', 'Monthly', 'Quarterly', 'Once'].map((f) => <option key={f}>{f}</option>)}
-                  </select>
-                  <InlineText ariaLabel="Owner" value={k.ownerName} disabled={!edit} className="sm" onSave={(v) => patch(k, { ownerName: v })} />
-                  {edit ? <button className="icon-btn" aria-label="Delete KPI" onClick={() => setDel(k.id)}><I.Trash /></button> : <span />}
-                </div>
-                <div className="row wrap tiny muted" style={{ gap: 12, paddingLeft: 2 }}>
-                  <span>Latest: {k.latest ? <strong style={{ color: 'var(--ink)' }}>{k.latest.value} {k.unit}</strong> : 'none'}{k.latest ? ` (${shortDate(k.latest.measuredAt)})` : ''}</span>
-                  {edit && <button className="btn ghost sm" style={{ minHeight: 26 }} onClick={() => setLogging(k)}>Log a value</button>}
-                  <label className="check tiny"><input type="checkbox" disabled={!edit} checked={k.afterGoLive} onChange={(e) => run(() => patch(k, { afterGoLive: e.target.checked }))} />Measured after go-live</label>
-                </div>
-              </div>
-            ))}
+      {d.kpis.map((k: any) => (
+        <div key={k.id} className="kpi-card">
+          <div className="row gap8">
+            <div className="grow"><InlineText ariaLabel="KPI name" value={k.name} disabled={!edit} onSave={(v) => patch(k, { name: v })} /></div>
+            <div style={{ width: 200 }}><InlineText ariaLabel="KPI owner" value={k.ownerName} disabled={!edit} placeholder="Who measures it" onSave={(v) => patch(k, { ownerName: v })} /></div>
+            {edit && <button className="icon-btn" aria-label={`Delete KPI ${k.name}`} onClick={() => setDel(k.id)}><I.Trash /></button>}
+          </div>
+          <div className="kpi-grid">
+            <label className="field tiny">Unit<InlineText ariaLabel="Unit" value={k.unit} disabled={!edit} className="sm" placeholder="%, h" onSave={(v) => patch(k, { unit: v })} /></label>
+            <label className="field tiny">Today<InlineText ariaLabel="Baseline" value={k.baseline == null ? '' : String(k.baseline)} disabled={!edit} className="sm money" onSave={(v) => patch(k, { baseline: num(v) })} /></label>
+            <label className="field tiny">Better if
+              <select className="select sm" disabled={!edit} value={k.direction} onChange={(e) => run(() => patch(k, { direction: e.target.value }))}>
+                <option value="INCREASE">Higher</option><option value="DECREASE">Lower</option>
+              </select>
+            </label>
+            <label className="field tiny">Target<InlineText ariaLabel="Target" value={String(k.target)} disabled={!edit} className="sm money" onSave={(v) => patch(k, { target: num(v) ?? 0 })} /></label>
+            <label className="field tiny">Measured
+              <select className="select sm" disabled={!edit} value={k.frequency} onChange={(e) => run(() => patch(k, { frequency: e.target.value }))}>
+                {['Weekly', 'Monthly', 'Quarterly', 'Once'].map((f) => <option key={f}>{f}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="row wrap tiny muted" style={{ gap: 12 }}>
+            <span>Latest: {k.latest ? <strong style={{ color: 'var(--ink)' }}>{k.latest.value} {k.unit}</strong> : 'none'}{k.latest ? ` (${shortDate(k.latest.measuredAt)})` : ''}</span>
+            {edit && <button className="btn sm" style={{ minHeight: 28 }} onClick={() => setLogging(k)}>Log a value</button>}
+            <label className="check tiny"><input type="checkbox" disabled={!edit} checked={k.afterGoLive} onChange={(e) => run(() => patch(k, { afterGoLive: e.target.checked }))} />Measured after go-live</label>
           </div>
         </div>
-      )}
+      ))}
       {edit && (
         <div className="row wrap gap8">
           <button className="btn sm" disabled={busy} onClick={() => addKpi()}>+ Add KPI</button>
@@ -360,8 +355,8 @@ function StepBudget({ edit }: { edit: boolean }) {
         <p className="small muted">Split the approved budget into posts. On the budget page you connect posts to swim lanes or tasks and book invoices against them.</p>
       </div>
       <label className="field" style={{ maxWidth: 300 }}>Approved budget ({currency})
-        <InlineText ariaLabel="Approved budget" className="money" disabled={!edit} value={String(d.budget?.approved ?? 0)}
-          onSave={(v) => api.patch(`/projects/${d.id}`, { approvedBudget: Number(v.replace(/\s/g, '').replace(',', '.')) || 0 }).then(() => { reload(); b.reload(); })} />
+        <MoneyInput ariaLabel="Approved budget" disabled={!edit} value={d.budget?.approved ?? 0} currency={currency}
+          onSave={(v) => api.patch(`/projects/${d.id}`, { approvedBudget: v }).then(() => { reload(); b.reload(); })} />
       </label>
       <PostsEditor projectId={d.id} posts={b.data.posts} currency={currency} canEdit={edit} onChanged={() => { b.reload(); reload(); }} />
       <AllocationNote approved={b.data.totals.approved} allocated={sumPosts(b.data.posts)} currency={currency} />
