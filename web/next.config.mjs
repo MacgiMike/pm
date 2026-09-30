@@ -5,6 +5,8 @@ const nextConfig = {
   reactStrictMode: true,
   // Type errors still fail the build; ESLint isn't part of this project.
   eslint: { ignoreDuringBuilds: true },
+  // No server-side image optimization: keeps sharp/libvips (LGPL) out of the runtime image.
+  images: { unoptimized: true },
   // In production Traefik sends /api/* straight to the API container.
   // For local development, set API_INTERNAL_URL (e.g. http://localhost:47814).
   async rewrites() {

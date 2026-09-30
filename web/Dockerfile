@@ -5,7 +5,9 @@ COPY package.json .npmrc ./
 COPY package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
-RUN npm run build
+RUN npm run build \
+  # sharp's prebuilt libvips is LGPL; the app doesn't use it, so it is not shipped.
+  && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
 
 FROM node:22-bookworm-slim
 WORKDIR /app

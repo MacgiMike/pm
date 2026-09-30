@@ -51,6 +51,8 @@ jobs:
         run: mkdir -p ../ci-logs && echo "commit ${{ github.sha }}" > ../ci-logs/api.log
       - name: Install
         run: set -o pipefail; npm install 2>&1 | tail -n 40 | tee -a ../ci-logs/api.log
+      - name: License check (no copyleft)
+        run: set -o pipefail; node ../tools/license-check.mjs 2>&1 | tee -a ../ci-logs/api.log
       - name: Create runtime DB role (like deploy/db-init)
         run: |
           set -o pipefail
@@ -104,6 +106,10 @@ jobs:
         if: steps.has.outputs.yes == 'true'
         working-directory: web
         run: mkdir -p ../ci-logs && set -o pipefail; npm install 2>&1 | tail -n 40 | tee ../ci-logs/web.log
+      - name: License check (no copyleft)
+        if: steps.has.outputs.yes == 'true'
+        working-directory: web
+        run: set -o pipefail; node ../tools/license-check.mjs 2>&1 | tee -a ../ci-logs/web.log
       - name: Type-check
         if: steps.has.outputs.yes == 'true'
         working-directory: web
@@ -143,9 +149,77 @@ jobs:
           path: ci-logs/
           if-no-files-found: ignore
 
+  ui:
+    runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/ci-results'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: lockred
+          POSTGRES_USER: lockred
+          POSTGRES_PASSWORD: ownerpw
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U lockred" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://lockred:ownerpw@localhost:5432/lockred
+      APP_DATABASE_URL: postgresql://lockred_app:apppw@localhost:5432/lockred
+      APP_URL: http://localhost:47813
+      APP_SECRET: ci-secret
+      PORT: "47814"
+      UPLOAD_DIR: /tmp/uploads
+      OPERATOR_EMAIL: ops@example.com
+      OPERATOR_PASSWORD: operator-password-123
+      OPERATOR_REQUIRE_MFA: "false"
+      DISABLE_CRON: "true"
+      API_INTERNAL_URL: http://localhost:47814
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: mkdir -p ci-logs/shots
+      - name: DB role
+        run: |
+          sudo apt-get install -y -q postgresql-client >/dev/null
+          PGPASSWORD=ownerpw psql -h localhost -U lockred -d lockred -c "CREATE ROLE lockred_app LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'apppw';"
+      - name: Build and start API
+        working-directory: api
+        run: |
+          npm install --no-audit --no-fund >/dev/null 2>&1
+          npx prisma generate >/dev/null && npx prisma migrate deploy && npm run build
+          nohup node dist/main.js > ../ci-logs/ui-api.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:47814/api/health >/dev/null && break; sleep 1; done
+      - name: Build and start web
+        working-directory: web
+        run: |
+          npm install --no-audit --no-fund >/dev/null 2>&1
+          npm run build > ../ci-logs/ui-web-build.log 2>&1
+          NODE_ENV=production PORT=47813 nohup npx next start -p 47813 > ../ci-logs/ui-web.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:47813/login >/dev/null && break; sleep 1; done
+          # the public demo is created on API start; wait until it answers
+          for i in $(seq 1 60); do curl -sf http://localhost:47814/api/demo/public >/dev/null && break; sleep 1; done
+      - name: Browser smoke test
+        working-directory: tools/ui-smoke
+        env:
+          BASE_URL: http://localhost:47813
+          SHOTS_DIR: ../../ci-logs/shots
+        run: |
+          npm install --no-audit --no-fund >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          set -o pipefail; node smoke.mjs 2>&1 | tee ../../ci-logs/ui.log
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-ui
+          path: ci-logs/
+          if-no-files-found: ignore
+
   publish-results:
     runs-on: ubuntu-24.04
-    needs: [api, web, docker]
+    needs: [api, web, docker, ui]
     if: always() && github.ref != 'refs/heads/ci-results'
     steps:
       - uses: actions/download-artifact@v4
@@ -161,6 +235,7 @@ jobs:
           api: ${{ needs.api.result }}
           web: ${{ needs.web.result }}
           docker: ${{ needs.docker.result }}
+          ui: ${{ needs.ui.result }}
           run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EOF
           cd out
