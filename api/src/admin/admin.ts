@@ -220,6 +220,7 @@ export class AdminService {
   }
 
   async deleteProject(ctx: Ctx, id: string) {
+    this.noDemo(ctx);
     const keys = await this.t(ctx, async (tx) => {
       const p = await tx.project.findUnique({ where: { id } });
       if (!p) throw notFound();

@@ -48,7 +48,7 @@ export default function SignupPage() {
         <label className="field">Your web address
           <span className="row gap4" style={{ border: '1px solid var(--field)', borderRadius: 8, paddingLeft: 12, background: 'var(--surface)' }}>
             <span className="muted small nowrap">{host}/</span>
-            <input className="input" style={{ border: 0, paddingLeft: 2 }} required pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]" value={slug}
+            <input className="input" style={{ border: 0, paddingLeft: 2 }} required pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]" value={slug}
               onChange={(e) => { setSlugTouched(true); setSlug(e.target.value.toLowerCase()); }} aria-describedby="slug-hint" />
           </span>
           <span id="slug-hint" className="hint">Lowercase letters, numbers and dashes.</span>

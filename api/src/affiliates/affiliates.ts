@@ -116,7 +116,7 @@ export class AffiliatesController {
         maxAge: config.affiliate.cookieDays * 86_400_000,
       });
     }
-    const target = to && to.startsWith('/') && !to.startsWith('//') ? to : '/signup';
+    const target = to && /^\/(?![\/\\])[\w\-\/?=&.%]*$/.test(to) ? to : '/signup';
     res.redirect(302, target);
   }
 
