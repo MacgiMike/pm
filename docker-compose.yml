@@ -46,7 +46,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
       - traefik.http.routers.lockred-api.rule=Host(`${APP_HOST:?set APP_HOST in .env}`) && PathPrefix(`/api`)
-      - traefik.http.routers.lockred-api.priority=100
+      - traefik.http.routers.lockred-api.priority=10010
       - traefik.http.routers.lockred-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
       - traefik.http.routers.lockred-api.tls=true
       - traefik.http.routers.lockred-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
@@ -67,7 +67,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
       - traefik.http.routers.lockred-web.rule=Host(`${APP_HOST}`)
-      - traefik.http.routers.lockred-web.priority=10
+      - traefik.http.routers.lockred-web.priority=10000
       - traefik.http.routers.lockred-web.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
       - traefik.http.routers.lockred-web.tls=true
       - traefik.http.routers.lockred-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
