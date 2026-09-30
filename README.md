@@ -36,7 +36,7 @@ At minimum, set these in `.env`:
 |---|---|
 | `APP_HOST` / `APP_URL` | `pm.lockred.app` / `https://pm.lockred.app` |
 | `TRAEFIK_ENTRYPOINT` | Your Traefik HTTPS entrypoint name (often `websecure`) |
-| `TRAEFIK_CERTRESOLVER` | Your certificate resolver name (often `letsencrypt`) |
+| `TRAEFIK_CERTRESOLVER` | Your certificate resolver name exactly as in Traefik’s static config, or empty if you use a default/wildcard certificate |
 | `DB_OWNER_PASSWORD`, `DB_APP_PASSWORD` | `openssl rand -hex 32` (two different values) |
 | `APP_SECRET` | `openssl rand -hex 32` |
 | `OPERATOR_EMAIL`, `OPERATOR_PASSWORD` | Your first operator login |
@@ -86,7 +86,7 @@ docker compose up -d --build
 ## How it fits together
 
 ```
-Internet → Traefik (proxy network, TLS)
+Internet → Traefik (proxy network, TLS; routers lockredpm-web / lockredpm-api)
              ├─ Host(pm.lockred.app) && PathPrefix(/api) → api:47814 (NestJS)
              └─ Host(pm.lockred.app)                     → web:47813 (Next.js)
 api ─ internal network ─ db (PostgreSQL 17)   backup (nightly pg_dump → volume "backups")

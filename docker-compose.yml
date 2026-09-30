@@ -45,12 +45,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.lockred-api.rule=Host(`${APP_HOST:?set APP_HOST in .env}`) && PathPrefix(`/api`)
-      - traefik.http.routers.lockred-api.priority=10010
-      - traefik.http.routers.lockred-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
-      - traefik.http.routers.lockred-api.tls=true
-      - traefik.http.routers.lockred-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
-      - traefik.http.services.lockred-api.loadbalancer.server.port=47814
+      - traefik.http.routers.lockredpm-api.rule=Host(`${APP_HOST:?set APP_HOST in .env}`) && PathPrefix(`/api`)
+      - traefik.http.routers.lockredpm-api.priority=10010
+      - traefik.http.routers.lockredpm-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.lockredpm-api.tls=true
+      - traefik.http.routers.lockredpm-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-}
+      - traefik.http.services.lockredpm-api.loadbalancer.server.port=47814
 
   web:
     build: ./web
@@ -66,12 +66,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.lockred-web.rule=Host(`${APP_HOST}`)
-      - traefik.http.routers.lockred-web.priority=10000
-      - traefik.http.routers.lockred-web.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
-      - traefik.http.routers.lockred-web.tls=true
-      - traefik.http.routers.lockred-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
-      - traefik.http.services.lockred-web.loadbalancer.server.port=47813
+      - traefik.http.routers.lockredpm-web.rule=Host(`${APP_HOST}`)
+      - traefik.http.routers.lockredpm-web.priority=10000
+      - traefik.http.routers.lockredpm-web.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.lockredpm-web.tls=true
+      - traefik.http.routers.lockredpm-web.tls.certresolver=${TRAEFIK_CERTRESOLVER:-}
+      - traefik.http.services.lockredpm-web.loadbalancer.server.port=47813
 
   # Nightly pg_dump at 02:30 (container time zone), keeps the last 14 dumps.
   backup:
