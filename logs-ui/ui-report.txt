@@ -1,0 +1,10 @@
+passed: 8
+  ok demo: manager sees portfolio, can open change-owner drawer, project is read-only
+  ok demo: owner works the project (lanes, task, budget, setup, team)
+  ok demo: owner (Elin) is admin — admin, billing and support pages
+  ok demo: contributor cannot see budget
+  ok guest: task link on a phone, update progress without login
+  ok mobile: portfolio with menu
+  ok sign-up: create organization, first project, setup wizard
+  ok operator: console, add partner, partner portal
+problems: 0

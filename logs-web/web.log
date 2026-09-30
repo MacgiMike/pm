@@ -1,0 +1,87 @@
+
+added 32 packages in 11s
+Checked 32 packages.
+    17  MIT
+     5  Apache-2.0
+     3  OFL-1.1
+     2  ISC
+     1  LGPL-3.0-or-later
+     1  Apache-2.0 AND LGPL-3.0-or-later AND MIT
+     1  CC-BY-4.0
+     1  BSD-3-Clause
+     1  0BSD
+
+No copyleft licenses.
+
+> lockred-web@1.0.0 build
+> next build
+
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.5.26
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 7.9s
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/19) ...
+   Generating static pages (4/19) 
+   Generating static pages (9/19) 
+   Generating static pages (14/19) 
+ ✓ Generating static pages (19/19)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      494 B         109 kB
+├ ○ /_not-found                            127 B         103 kB
+├ ƒ /[tenant]                            4.45 kB         118 kB
+├ ƒ /[tenant]/admin                      6.66 kB         121 kB
+├ ƒ /[tenant]/billing                     3.4 kB         117 kB
+├ ƒ /[tenant]/my-tasks                   1.42 kB         115 kB
+├ ƒ /[tenant]/p/[id]                      3.5 kB         117 kB
+├ ƒ /[tenant]/p/[id]/budget              6.51 kB         121 kB
+├ ƒ /[tenant]/p/[id]/lanes               4.94 kB         119 kB
+├ ƒ /[tenant]/p/[id]/plan                 5.5 kB         119 kB
+├ ƒ /[tenant]/p/[id]/report               3.5 kB         117 kB
+├ ƒ /[tenant]/p/[id]/setup                7.9 kB         122 kB
+├ ƒ /[tenant]/p/[id]/tasks/[taskId]      5.41 kB         119 kB
+├ ƒ /[tenant]/p/[id]/team                4.36 kB         118 kB
+├ ƒ /[tenant]/reports                    2.09 kB         116 kB
+├ ƒ /[tenant]/support                    2.96 kB         117 kB
+├ ƒ /[tenant]/support/[ticketId]         1.55 kB         116 kB
+├ ○ /account                             2.27 kB         114 kB
+├ ○ /demo                                2.13 kB         114 kB
+├ ƒ /demo/[code]                         2.22 kB         114 kB
+├ ○ /forgot                              3.33 kB         109 kB
+├ ƒ /invite/[token]                      2.12 kB         114 kB
+├ ○ /login                               3.75 kB         110 kB
+├ ○ /ops                                  2.9 kB         114 kB
+├ ○ /ops/affiliates                      2.22 kB         110 kB
+├ ○ /ops/demos                           1.17 kB         109 kB
+├ ○ /ops/ideas                           1.38 kB         109 kB
+├ ○ /ops/operators                       1.37 kB         109 kB
+├ ○ /ops/support                         1.79 kB         113 kB
+├ ƒ /ops/support/[id]                    2.27 kB         114 kB
+├ ○ /ops/system                           1.4 kB         110 kB
+├ ƒ /ops/tenants/[id]                    3.36 kB         115 kB
+├ ○ /partners                            3.02 kB         115 kB
+├ ƒ /reset/[token]                       3.44 kB         109 kB
+├ ○ /select                              1.63 kB         113 kB
+├ ○ /signup                               3.9 kB         110 kB
+├ ƒ /t/[token]                           3.08 kB         111 kB
+└ ○ /terms                                 168 B         106 kB
++ First Load JS shared by all             103 kB
+  ├ chunks/1255-0f12d1d68e0b5948.js      46.4 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+  └ other shared chunks (total)          1.93 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

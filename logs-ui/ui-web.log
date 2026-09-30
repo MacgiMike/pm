@@ -1,0 +1,7 @@
+   ▲ Next.js 15.5.26
+   - Local:        http://localhost:47813
+   - Network:      http://10.1.1.118:47813
+
+ ✓ Starting...
+ ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+ ✓ Ready in 284ms

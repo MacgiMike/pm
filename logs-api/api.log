@@ -1,0 +1,172 @@
+commit a231ef29aefdc454f308e8a1ab7b672d09961569
+npm warn deprecated @otplib/plugin-thirty-two@12.0.1: Please upgrade to v13 of otplib. Refer to otplib docs for migration paths
+npm warn deprecated @otplib/preset-default@12.0.1: Please upgrade to v13 of otplib. Refer to otplib docs for migration paths
+npm warn deprecated @otplib/plugin-crypto@12.0.1: Please upgrade to v13 of otplib. Refer to otplib docs for migration paths
+
+added 199 packages in 20s
+Checked 197 packages.
+   167  MIT
+    12  ISC
+    11  Apache-2.0
+     3  BSD-3-Clause
+     1  BSD-2-Clause
+     1  MIT-0
+     1  UNKNOWN
+     1  0BSD
+
+No license field (check manually): thirty-two@1.0.2
+
+No copyleft licenses.
+CREATE ROLE
+CREATE DATABASE
+Prisma schema loaded from prisma/schema.prisma
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.3 -> 8.0.0-rc.19                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 269ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "lockred", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+
+Applying migration `0001_init`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 0001_init/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+=== DRIFT CHECK ===
+-- This is an empty migration.
+
+no drift
+
+> lockred-api@1.0.0 build
+> tsc -p tsconfig.build.json
+
+API up
+
+> lockred-api@1.0.0 test:e2e
+> tsc -p tsconfig.test.json && node --test --test-concurrency=1 dist-test/test/e2e.test.js
+
+TAP version 13
+# Subtest: health
+ok 1 - health
+  ---
+  duration_ms: 49.656905
+  type: 'test'
+  ...
+# Subtest: sign up two separate organizations
+ok 2 - sign up two separate organizations
+  ---
+  duration_ms: 214.261364
+  type: 'test'
+  ...
+# Subtest: owner creates a project with a lane and a task
+ok 3 - owner creates a project with a lane and a task
+  ---
+  duration_ms: 71.327857
+  type: 'test'
+  ...
+# Subtest: tenant isolation: another organization cannot see or reach the project
+ok 4 - tenant isolation: another organization cannot see or reach the project
+  ---
+  duration_ms: 47.063528
+  type: 'test'
+  ...
+# Subtest: deny by default: a member who is not on the project gets nothing
+ok 5 - deny by default: a member who is not on the project gets nothing
+  ---
+  duration_ms: 161.996806
+  type: 'test'
+  ...
+# Subtest: contributor: can work on tasks, cannot see budget or delegate
+ok 6 - contributor: can work on tasks, cannot see budget or delegate
+  ---
+  duration_ms: 89.805879
+  type: 'test'
+  ...
+# Subtest: task progress rolls up to the lane (weighted by hours)
+ok 7 - task progress rolls up to the lane (weighted by hours)
+  ---
+  duration_ms: 16.344163
+  type: 'test'
+  ...
+# Subtest: co-lead: can manage budget, cannot delegate access
+ok 8 - co-lead: can manage budget, cannot delegate access
+  ---
+  duration_ms: 30.548812
+  type: 'test'
+  ...
+# Subtest: budget: booking an invoice updates spent
+ok 9 - budget: booking an invoice updates spent
+  ---
+  duration_ms: 39.678336
+  type: 'test'
+  ...
+# Subtest: manager: sees every project read-only and can change the owner
+ok 10 - manager: sees every project read-only and can change the owner
+  ---
+  duration_ms: 182.371438
+  type: 'test'
+  ...
+# Subtest: task link: external guest updates progress without logging in; revoke stops it
+ok 11 - task link: external guest updates progress without logging in; revoke stops it
+  ---
+  duration_ms: 93.226277
+  type: 'test'
+  ...
+# Subtest: reports: portfolio and project report
+ok 12 - reports: portfolio and project report
+  ---
+  duration_ms: 31.060825
+  type: 'test'
+  ...
+# Subtest: admin: users, seats, audit log; members cannot use admin
+ok 13 - admin: users, seats, audit log; members cannot use admin
+  ---
+  duration_ms: 31.900498
+  type: 'test'
+  ...
+# Subtest: support: ticket round trip
+ok 14 - support: ticket round trip
+  ---
+  duration_ms: 19.864991
+  type: 'test'
+  ...
+# Subtest: demo: public demo can be entered as a manager and has sample projects
+ok 15 - demo: public demo can be entered as a manager and has sample projects
+  ---
+  duration_ms: 36.226156
+  type: 'test'
+  ...
+# Subtest: database role cannot read other tenants even without the API
+ok 16 - database role cannot read other tenants even without the API
+  ---
+  duration_ms: 58.454437
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1269.788258

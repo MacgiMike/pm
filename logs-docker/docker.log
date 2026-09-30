@@ -1,0 +1,150 @@
+#24 [api build  8/11] RUN npx prisma generate
+#24 1.481 Prisma schema loaded from prisma/schema.prisma
+#24 2.311 
+#24 2.311 ✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 409ms
+#24 2.311 
+#24 2.311 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#24 2.311 
+#24 2.311 Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+#24 2.311 
+#24 DONE 2.4s
+
+#25 [api build  9/11] COPY tsconfig.json tsconfig.build.json ./
+#25 DONE 0.0s
+
+#22 [web build 7/7] RUN npm run build   && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
+#22 ...
+
+#26 [api build 10/11] COPY src ./src
+#26 DONE 0.0s
+
+#27 [api build 11/11] RUN npm run build
+#27 0.328 
+#27 0.328 > lockred-api@1.0.0 build
+#27 0.328 > tsc -p tsconfig.build.json
+#27 0.328 
+#27 ...
+
+#22 [web build 7/7] RUN npm run build   && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
+#22 15.69  ✓ Compiled successfully in 11.4s
+#22 15.69    Skipping linting
+#22 15.69    Checking validity of types ...
+#22 ...
+
+#27 [api build 11/11] RUN npm run build
+#27 DONE 7.8s
+
+#22 [web build 7/7] RUN npm run build   && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
+#22 ...
+
+#28 [api stage-1 4/8] COPY --from=build /app/package.json ./
+#28 DONE 0.0s
+
+#22 [web build 7/7] RUN npm run build   && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
+#22 ...
+
+#29 [api stage-1 5/8] COPY --from=build /app/node_modules ./node_modules
+#29 DONE 2.1s
+
+#22 [web build 7/7] RUN npm run build   && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
+#22 ...
+
+#30 [api stage-1 6/8] COPY --from=build /app/prisma ./prisma
+#30 DONE 0.0s
+
+#31 [api stage-1 7/8] COPY --from=build /app/dist ./dist
+#31 DONE 0.0s
+
+#32 [api stage-1 8/8] RUN mkdir -p /data/uploads /backups && chown -R node:node /data/uploads
+#32 DONE 0.1s
+
+#33 [api] exporting to image
+#33 exporting layers
+#33 exporting layers 4.0s done
+#33 writing image sha256:87fff0bc53b8cf6c7fba508105d29702826adaacc3ca09aa58c9b11ac90ea704 done
+#33 naming to docker.io/lockred/api:latest done
+#33 DONE 4.0s
+
+#34 [api] resolving provenance for metadata file
+#34 DONE 0.0s
+
+#22 [web build 7/7] RUN npm run build   && rm -rf .next/standalone/node_modules/sharp .next/standalone/node_modules/@img
+#22 24.26    Collecting page data ...
+#22 27.43    Generating static pages (0/19) ...
+#22 28.06    Generating static pages (4/19) 
+#22 28.22    Generating static pages (9/19) 
+#22 28.22    Generating static pages (14/19) 
+#22 28.22  ✓ Generating static pages (19/19)
+#22 29.07    Finalizing page optimization ...
+#22 29.07    Collecting build traces ...
+#22 45.77 
+#22 45.77 Route (app)                                 Size  First Load JS
+#22 45.77 ┌ ○ /                                      494 B         109 kB
+#22 45.77 ├ ○ /_not-found                            127 B         103 kB
+#22 45.77 ├ ƒ /[tenant]                            4.45 kB         118 kB
+#22 45.77 ├ ƒ /[tenant]/admin                      6.67 kB         121 kB
+#22 45.77 ├ ƒ /[tenant]/billing                     3.4 kB         117 kB
+#22 45.77 ├ ƒ /[tenant]/my-tasks                   1.42 kB         115 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]                      3.5 kB         117 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/budget              6.51 kB         121 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/lanes               4.93 kB         119 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/plan                 5.5 kB         119 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/report               3.5 kB         117 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/setup                7.9 kB         122 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/tasks/[taskId]      5.41 kB         119 kB
+#22 45.77 ├ ƒ /[tenant]/p/[id]/team                4.36 kB         118 kB
+#22 45.77 ├ ƒ /[tenant]/reports                    2.09 kB         116 kB
+#22 45.77 ├ ƒ /[tenant]/support                    2.96 kB         117 kB
+#22 45.77 ├ ƒ /[tenant]/support/[ticketId]         1.55 kB         116 kB
+#22 45.77 ├ ○ /account                             2.27 kB         114 kB
+#22 45.77 ├ ○ /demo                                2.13 kB         114 kB
+#22 45.77 ├ ƒ /demo/[code]                         2.22 kB         114 kB
+#22 45.77 ├ ○ /forgot                              3.32 kB         109 kB
+#22 45.77 ├ ƒ /invite/[token]                      2.11 kB         114 kB
+#22 45.77 ├ ○ /login                               3.75 kB         110 kB
+#22 45.77 ├ ○ /ops                                  2.9 kB         114 kB
+#22 45.77 ├ ○ /ops/affiliates                      2.22 kB         110 kB
+#22 45.77 ├ ○ /ops/demos                           1.17 kB         109 kB
+#22 45.77 ├ ○ /ops/ideas                           1.38 kB         109 kB
+#22 45.77 ├ ○ /ops/operators                       1.37 kB         109 kB
+#22 45.77 ├ ○ /ops/support                         1.79 kB         113 kB
+#22 45.77 ├ ƒ /ops/support/[id]                    2.27 kB         114 kB
+#22 45.77 ├ ○ /ops/system                           1.4 kB         110 kB
+#22 45.77 ├ ƒ /ops/tenants/[id]                    3.36 kB         115 kB
+#22 45.77 ├ ○ /partners                            3.02 kB         115 kB
+#22 45.77 ├ ƒ /reset/[token]                       3.43 kB         109 kB
+#22 45.77 ├ ○ /select                              1.63 kB         113 kB
+#22 45.77 ├ ○ /signup                               3.9 kB         110 kB
+#22 45.77 ├ ƒ /t/[token]                           3.08 kB         111 kB
+#22 45.77 └ ○ /terms                                 168 B         106 kB
+#22 45.77 + First Load JS shared by all             103 kB
+#22 45.77   ├ chunks/1255-0f12d1d68e0b5948.js      46.4 kB
+#22 45.77   ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+#22 45.77   └ other shared chunks (total)          1.93 kB
+#22 45.77 
+#22 45.77 
+#22 45.77 ○  (Static)   prerendered as static content
+#22 45.77 ƒ  (Dynamic)  server-rendered on demand
+#22 45.77 
+#22 DONE 45.9s
+
+#35 [web stage-1 3/5] COPY --from=build /app/.next/standalone ./
+#35 DONE 0.3s
+
+#36 [web stage-1 4/5] COPY --from=build /app/.next/static ./.next/static
+#36 DONE 0.0s
+
+#37 [web stage-1 5/5] COPY --from=build /app/public ./public
+#37 DONE 0.0s
+
+#38 [web] exporting to image
+#38 exporting layers
+#38 exporting layers 0.8s done
+#38 writing image sha256:2cdfcb59ee6fb01d4597144699403e67917c53dffc05a1955c10863bbf8a24be done
+#38 naming to docker.io/lockred/web:latest done
+#38 DONE 0.8s
+
+#39 [web] resolving provenance for metadata file
+#39 DONE 0.0s
+ api  Built
+ web  Built
